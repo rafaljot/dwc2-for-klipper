@@ -106,6 +106,7 @@ class web_dwc2:
 	def shutdown(self):
 		#	kill the thread here
 		logging.info( "DWC2 shuting down - as klippy is shutdown" )
+		self.ioloop.stop()
 		self.http_server.stop()
 		self.sessions = {}
 
@@ -125,7 +126,8 @@ class web_dwc2:
 			logging.info( "DWC2 starting at: http://" + str(self.adress) + ":" + str(self.port) )
 			self.http_server = tornado.httpserver.HTTPServer( application, max_buffer_size=500*1024*1024 )
 			self.http_server.listen( self.port )
-			tornado.ioloop.IOLoop.instance().start()
+			self.ioloop = tornado.ioloop.IOLoop.current()
+			self.ioloop.start()
 		def debug_console(self):
 			logging.debug( "Start debbug console:\n")
 			import pdb; pdb.set_trace()
@@ -1239,8 +1241,9 @@ class web_dwc2:
 			return
 
 		ack_needers = [ "G0", "G1", "G28", "M0", "M24", "M25", "M83", "M84", "M104", "M112", "M117", "M140", "M141", "DUMP_TMC", "FIRMWARE_RESTART" "", "SET_PIN", "STEPPER_BUZZ" ]
-		lowers = [ "DUMP_TMC", "ENDSTOP_PHASE_CALIBRATE", "FORCE_MOVE", "PID_CALIBRATE", "SET_HEATER_TEMPERATURE", "SET_PIN", "SET_PRESSURE_ADVANCE", "STEPPER_BUZZ" ]
-
+		lowers = [ "DUMP_TMC", "INIT_TMC", "SET_TMC_CURRENT", "SET_TMC_FIELD", "PROBE", "PROBE_TEMP", "RESTART",
+				   "ENDSTOP_PHASE_CALIBRATE", "FORCE_MOVE", "PID_CALIBRATE", "SET_HEATER_TEMPERATURE", "SET_PIN",
+				   "SET_PRESSURE_ADVANCE", "STEPPER_BUZZ" ]
 		self.gcode.dwc_lock = self.gcode.is_processing_data = True
 
 		while self.gcode_queue:
@@ -1256,13 +1259,13 @@ class web_dwc2:
 				handler(params)
 			except Exception as e:
 				self.gcode_reply.append( "" )
-				logging.error( "failed: " + params['#command'] + str(e) )
+				logging.warn( "failed: " + params['#command'] + str(e) )
 				#self.set_popup(msg=params['#command'] + ' resulted with: ' + str(e))
 				#self.set_message(msg="Warning: " + params['#command'] + ' resulted with: ' + str(e))
 				time.sleep(1)	#	not beautiful but webif ignores errors on button commands otherwise
 				self.gcode_reply.append( "!! " + str(e) + "\n" )
 			else:
-				logging.error( "passed: " + params['#command'] )
+				logging.info( "passed: " + params['#command'] )
 				if params['#command'] in ack_needers or params['#command'] in self.klipper_macros:
 					self.gcode_reply.append( "" )	#	pseudo ack
 
@@ -1306,7 +1309,7 @@ class web_dwc2:
 		if not parts:
 			# Treat empty line as empty command
 			parts = ['', '']
-		params['#command'] = cmd = parts[0] + parts[1].strip()
+		params['#command'] = cmd = parts[0] + parts[1].strip().split(' ')[0]
 
 		return params
 	#	launch individual resume macro
