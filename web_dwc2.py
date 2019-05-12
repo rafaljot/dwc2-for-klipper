@@ -520,8 +520,7 @@ class web_dwc2:
 		}
 
 		#	allow - set heater, cancelprint, set bed, ,pause, resume, set fan, set speedfactor, set extrusion multipler, babystep, ok in popup
-		midprint_allow = [ 'G10', 'M0', 'M140', 'M24', 'M25', 'M106', 'M220', 'M221', 'M290', 'M292', 'DUMP_TMC' ,
-					  'SET_TMC_CURRENT' , 'SET_TMC_FIELD', 'PROBE_TEMP', 'QUERY_PROBE', 'SET_PIN', 'QUERY_ENDSTOPS']
+		midprint_allow = [ 'G10', 'M0', 'M140', 'M24', 'M25', 'M106', 'M220', 'M221', 'M290', 'M292' ]
 
 		#	Handle emergencys - just do it now
 		for code in gcodes:
